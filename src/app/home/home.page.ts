@@ -1,4 +1,6 @@
 import { Component, ViewChild, ElementRef } from '@angular/core';
+import { Geolocation } from '@ionic-native/geolocation/ngx';
+declare var RemoGeoLocation: any;
 declare var AMap;
 @Component({
   selector: 'app-home',
@@ -12,9 +14,15 @@ export class HomePage {
   preVal: any[] = [];
   count: number = 0;
   private timer;
+  private timer1;
+
   // 定位结果
   locationRe: any = [];
-  constructor() { }
+  constructor(private geolocation: Geolocation) {
+    // var remoGeo = new RemoGeoLocation();
+    // console.log("-1-1:" + remoGeo._getSeq());
+
+  }
   ionViewDidEnter() {
     this.loca();
     this.timer = setInterval(() => {
@@ -41,9 +49,30 @@ export class HomePage {
         'content': '<img src="https://a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png" style="width:36px;height:36px"/>'
       },
     }
-    var lineArr = [];
+
+
+
+
     AMap.plugin('AMap.Geolocation', function () {
       var geolocation = new AMap.Geolocation(options);
+
+      // ios环境切换到使用远程https定位
+      if (AMap.UA.ios && document.location.protocol !== 'https:') {
+
+        //使用远程定位，见 remogeo.js
+        var remoGeo = new RemoGeoLocation();
+
+        //替换方法
+        navigator.geolocation.getCurrentPosition = function () {
+          return remoGeo.getCurrentPosition.apply(remoGeo, arguments);
+        };
+
+        //替换方法
+        navigator.geolocation.watchPosition = function () {
+          return remoGeo.watchPosition.apply(remoGeo, arguments);
+        };
+      }
+
       map.addControl(geolocation);
       geolocation.getCurrentPosition(function (status, result) {
         if (status == 'complete') {
@@ -52,7 +81,7 @@ export class HomePage {
       });
     });
     //画大地线
-    setInterval(() => {
+    this.timer1 = setInterval(() => {
       console.log("划线...........");
       var polyline = new AMap.Polyline({
         path: this.mapline,            // 设置线覆盖物路径
@@ -111,6 +140,9 @@ export class HomePage {
   ionViewDidLeave() {
     if (this.timer) {
       clearInterval(this.timer);
+    }
+    if (this.timer1) {
+      clearInterval(this.timer1);
     }
   }
 }
